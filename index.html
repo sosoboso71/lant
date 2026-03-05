@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>Word Chain – IndoFinity</title>
+
+<style>
+    body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        background: radial-gradient(circle at top, #111 0, #000 60%);
+        color: #fff;
+        overflow: hidden;
+    }
+    .wrapper {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        padding-top: 80px;
+        gap: 20px;
+    }
+    #letters-container {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        align-items: flex-start;
+        max-width: 80%;
+    }
+    .letter-box {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        font-weight: 900;
+        text-shadow: 0 0 8px rgba(0,0,0,0.8);
+        transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+    .letter-box:hover { transform: scale(1.05); }
+    .letter-box.used {
+        background: #4caf50 !important;
+        box-shadow: 0 0 20px #4caf50, 0 0 40px #4caf50 !important;
+        color: #fff;
+    }
+    #timer {
+        font-size: 20px;
+        font-weight: 600;
+        text-shadow: 0 0 10px rgba(0,0,0,0.8);
+    }
+    #info-panel {
+        font-size: 18px;
+        min-height: 24px;
+        opacity: 0;
+        transition: opacity 0.4s;
+        text-align: center;
+        padding: 6px 14px;
+        border-radius: 12px;
+        background: rgba(0,0,0,0.45);
+        box-shadow: 0 0 18px rgba(0,0,0,0.7);
+        max-width: 80%;
+    }
+    .title {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        text-shadow: 0 0 12px rgba(255,255,255,0.6);
+    }
+    .scoreboard { display: none !important; }
+    .column {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+    }
+    .word-piece {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        font-weight: 900;
+        color: #fff;
+        text-shadow: 0 0 8px rgba(0,0,0,0.8);
+    }
+    #scoreOverlay {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(10,10,10,0.95);
+        padding: 20px 40px;
+        border-radius: 16px;
+        box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        text-align: center;
+        font-size: 18px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        z-index: 9999;
+    }
+    #scoreOverlay.show { opacity: 1; pointer-events: auto; }
+</style>
+</head>
+
+<body>
+
+<div class="title">Lanț de cuvinte – Chat TikTok</div>
+
+<div class="scoreboard">
+    <ul id="score-list"></ul>
+</div>
+
+<div class="wrapper">
+    <div id="letters-container"></div>
+    <div id="timer">Litere folosite: 0 / 0</div>
+    <div id="info-panel"></div>
+</div>
+
+<div id="scoreOverlay">
+    <div id="ovUser"></div>
+    <div id="ovText"></div>
+    <div id="ovPoints"></div>
+</div>
+
+<script>
+// ----------------------------
+// CONECTARE TIKFINITY
+// ----------------------------
+const socket = new WebSocket("ws://localhost:62024");
+
+socket.onopen = () => console.log("Conectat la TikFinity!");
+
+socket.onmessage = (event) => {
+    const packet = JSON.parse(event.data);
+    if (packet.event === "chat") {
+        const user =
+            packet.data.nickname ||
+            packet.data.uniqueId ||
+            packet.data.displayName ||
+            packet.data.username ||
+            "necunoscut";
+
+        const message = packet.data.comment || "";
+        handleChat(user, message);
+    }
+};
+
+// ----------------------------
+// ELEMENTE HTML
+// ----------------------------
+const lettersContainer = document.getElementById("letters-container");
+const timerEl = document.getElementById("timer");
+const infoPanel = document.getElementById("info-panel");
+const scoreList = document.getElementById("score-list");
+const scoreOverlay = document.getElementById("scoreOverlay");
+const ovUser = document.getElementById("ovUser");
+const ovText = document.getElementById("ovText");
+const ovPoints = document.getElementById("ovPoints");
+
+// ----------------------------
+// LISTĂ CUVINTE INTERZISE
+// ----------------------------
+const bannedWords = [
+    "pula","pule","puli","pulii","pizda","pizde","muie","muii",
+    "fut","fute","futut","fututa","fututi","futai","cur","curu",
+    "curva","curve","handicapat","prost","idiot","retard","nebun",
+    "sex","porno","porn","penis","vagina","suge","sugi","mortii",
+    "dracu","matii","muistu","pizdar","pizduta"
+];
+
+// ----------------------------
+// JOC WORDCHAIN (MINIFICAT)
+// ----------------------------
+let currentWord="",roundActive=false,scores={},globalScores={},lastReset=localStorage.getItem("lastReset")||null,usedWords=new Set,usedLetters=new Set,startWords=[];
+
+function loadScores(){const e=localStorage.getItem("scores"),t=localStorage.getItem("globalScores");lastReset=localStorage.getItem("lastReset"),e&&(scores=JSON.parse(e)),t&&(globalScores=JSON.parse(t)),checkDailyReset(),updateScoreboard()}
+function checkDailyReset(){const e=(new Date).toISOString().slice(0,10);lastReset!==e&&(scores={},lastReset=e,localStorage.setItem("lastReset",e),localStorage.setItem("scores",JSON.stringify(scores)))}
+function saveScores(){localStorage.setItem("scores",JSON.stringify(scores)),localStorage.setItem("globalScores",JSON.stringify(globalScores))}
+
+fetch("words.json").then(e=>e.json()).then(e=>{
+    startWords=e.filter(e=>"string"==typeof e).map(e=>e.trim().toLowerCase()).filter(e=>e.length>0);
+    loadScores();
+    startRound();
+});
+
+const neonColors=["#00eaff","#ff00f7","#00ff6a","#ff006e","#7b2ff7","#00f5d4","#ff5400","#9d4edd","#ff1493","#39ff14","#1e90ff","#ff4500","#9400d3","#00ffff","#ff2e00"];
+function randomNeonColor(){return neonColors[Math.floor(Math.random()*neonColors.length)]}
+function renderWord(e){lettersContainer.innerHTML="";e.split("").forEach((t,o)=>{const n=document.createElement("div");n.classList.add("column"),n.dataset.letter=t,n.dataset.index=o;const r=document.createElement("div");r.classList.add("letter-box");const a=randomNeonColor();r.style.background=a,r.style.boxShadow=`0 0 20px ${a}, 0 0 40px ${a}`,r.textContent=t.toUpperCase(),usedLetters.has(o)&&r.classList.add("used"),n.appendChild(r),lettersContainer.appendChild(n)}),updateLettersStatus()}
+function placeWordUnderLetter(e,t){const o=document.querySelector(`.column[data-index="${e}"]`);if(!o)return;t.slice(1).toUpperCase().split("").forEach(e=>{const t=document.createElement("div");t.classList.add("word-piece");const n=randomNeonColor();t.style.background=n,t.style.boxShadow=`0 0 15px ${n}, 0 0 30px ${n}`,t.textContent=e,o.appendChild(t)})}
+ 
+
+function showInfo(e){
+    infoPanel.textContent=e,infoPanel.style.opacity=1,setTimeout(()=>{infoPanel.style.opacity=0},5e3)
+}
+
+function showScoreOverlay(e,t,o,n){
+    ovUser.innerHTML=`<strong>${e}</strong>`,ovText.textContent=t,ovPoints.textContent=`+${o} puncte (total: ${n})`,
+    scoreOverlay.classList.add("show"),setTimeout(()=>{scoreOverlay.classList.remove("show")},2500)
+}
+
+const funnyLines=["🧠 ai creier turbo!","🔥 ai detonat litera!","⚡ ai gasit cuvantul perfect!","😎 esti maestru la WordChain!","🚀 ai zburat cu raspunsul!","👑 esti rege la WordChain!"];
+
+function updateScoreboard(){
+    scoreList.innerHTML="";
+    Object.entries(scores).sort((e,t)=>t[1]-e[1]).slice(0,8).forEach(([e,t])=>{
+        const o=document.createElement("li");
+        o.innerHTML=`<span>${e}</span><span>${t}p</span>`,scoreList.appendChild(o)
+    })
+}
+
+function updateLettersStatus(){timerEl.textContent=`Litere folosite: ${usedLetters.size} / ${currentWord.length}`}
+
+function startRound(){
+    if(!startWords||0===startWords.length)return setTimeout(startRound,200);
+    currentWord=startWords[Math.floor(Math.random()*startWords.length)];
+    usedWords=new Set([currentWord.toLowerCase()]),usedLetters=new Set,roundActive=!0,renderWord(currentWord);
+    showInfo(`Cuvânt nou: ${currentWord.toUpperCase()} – foloseste literele lui pentru a forma substantive.`)
+}
+
+function getRank(e){
+    const t=Object.entries(scores).sort((e,t)=>t[1]-e[1]).findIndex(([t])=>t===e);
+    return-1===t?null:t+1
+}
+
+function handleChat(e,t){
+    if(t=t.trim().toLowerCase(),!/^[a-zăâîșț]+$/i.test(t))return;
+
+    if("top"===t){
+        const t=Object.entries(scores).sort((e,t)=>t[1]-e[1]).slice(0,5).map(([e,t],o)=>`${o+1}. ${e}: ${t}p`).join(" | ");
+        return showInfo("Top local: "+(t||"nimeni încă")),scoreList.style.display="block",void setTimeout(()=>scoreList.style.display="none",5e3)
+    }
+
+    if("global"===t){
+        const t=Object.entries(globalScores).sort((e,t)=>t[1]-e[1]).slice(0,5).map(([e,t],o)=>`${o+1}. ${e}: ${t}p`).join(" | ");
+        return showInfo("Top global: "+(t||"nimeni încă"))
+    }
+
+    if("score"===t){
+        const t=scores[e]||0,o=getRank(e),n=o?`ești pe locul ${o} local`:"nu ești încă în clasament";
+        return showInfo(`${e}, ai ${t} puncte, ${n}.`)
+    }
+
+    if(!roundActive)return;
+
+    const o=t.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z]/g,"");
+    if(bannedWords.some(e=>o.includes(e)))return showInfo(`${e}: cuvânt interzis.`);
+    if(o.length<2)return;
+
+    const n=o[0],r=currentWord.toLowerCase().split(""),s=Array.from(new Set(r));
+    if(!s.includes(n))return showInfo(`${e}: cuvântul trebuie să înceapă cu una din literele din "${currentWord.toUpperCase()}"`);
+
+    const a=[];r.forEach((e,t)=>{e===n&&a.push(t)});
+    let i=null;
+    for(const e of a)if(!usedLetters.has(e)){i=e;break}
+    if(null===i)return showInfo(`${e}: toate literele "${n.toUpperCase()}" au fost folosite.`);
+    if(usedWords.has(o))return showInfo(`${e}: cuvânt deja folosit!`);
+
+    usedWords.add(o),usedLetters.add(i);
+    const l=o.slice(1);
+    placeWordUnderLetter(i,o) 
+
+    scores[e]||(scores[e]=0);
+    let c=10;
+    scores[e]+=c;
+
+    globalScores[e]||(globalScores[e]=0);
+    globalScores[e]+=c;
+
+    saveScores();
+
+    const d=funnyLines[Math.floor(Math.random()*funnyLines.length)];
+    showInfo(`${e}: ${o.toUpperCase()} → ${l.toUpperCase()} | +${c}p`);
+    updateScoreboard();
+    updateLettersStatus();
+    showScoreOverlay(e,d,c,scores[e]);
+
+    usedLetters.size===r.length&&(roundActive=!1,showInfo(`Runda terminata! Toate literele din "${currentWord.toUpperCase()}" au fost folosite.`),setTimeout(startRound,2500))
+}
+</script>
+
+</body>
+</html>
