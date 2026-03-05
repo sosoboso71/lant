@@ -415,7 +415,7 @@ function handleChat(user, msg){
     updateLettersStatus();
     showScoreOverlay(user, funny, pts, dailyScores[user]);
 
-    if(usedLetters.size === letters.length){
+    if (usedLetters.size === document.querySelectorAll(".column").length) { 
         roundActive = false;
         showInfo(`Runda terminata! Toate literele din "${currentWord.toUpperCase()}" au fost folosite.`);
         setTimeout(startRound, 2500);
@@ -425,3 +425,4 @@ function handleChat(user, msg){
 
 </body>
 </html> 
+
