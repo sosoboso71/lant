@@ -244,7 +244,7 @@
 "haina","hambar","hamster","harta","hartie","hobby","hotel","husa","habar","halat",
 "halba","halou","hamac","harpa","harpon","hazna","hectar","heliu","hering","hibrid",
 "hidrant","hiena","hipodrom","hol","holera","hologram","homar","horoscop","hrisca","hruba",
-"hub","huila","humus","husar","huzur","hormon","har","hatis","hambar2","harta2",
+"hub","huila","humus","husar","huzur","hormon","har","hatis","hambar2","harta",
 "iarba","iatac","iatagan","ibric","icoana","ideal","ideea","idiom","idol","iepure",
 "iesire","iglu","igiena","iluzie","imagine","imn","impact","imparat","impuls","inaltime",
 "inel","inghet","inginer","insula","intuneric","inventar","inviere","ion","ionizare","iris",
@@ -319,17 +319,7 @@
 "naratiune","narval","nas","nasal","nasica","nastere","natarau","natiune","navala","navetist",
 "nazist","neagra","neam","neant","nebuloasa","nechez","nectar","nedemn","nefron","negura",
 "neica","neon","nepot","nerv","nervura","neuron","nevasta","nevoie","nevroz","nichel",
-"nicovala","nifon","nihilism","nimba","nimeni","nimic","ninja","nisip","nivel","nobil2",
-"nod2","noian2","nomen2","nonet2","nor2","noroc2","norma2","nota2","notar2","nou2","novac2",
-"nox2","nuca2","nud2","nufar2","nula2","numar2","nunta2","nurca2","nut2","nutret2","nuvela2",
-"nabab3","nadir3","naftal3","nalba2","namol2","nanism2","napalm2","narod2","nas2","natura2",
-"navet2","neagra3","neant3","nebun2","nectar3","negura3","neon3","nepot3","nerv3","neuron3",
-"nevroz3","nichel3","nimic3","nisip3","nivel3","nobil3","nod3","nor3","noroc3","nota3","nou3",
-"novac3","nox3","nuca3","nud3","nufar3","numar3","nunta3","nurca3","nut3","nuvela3","nadir4",
-"naftal4","nalba3","namol3","napalm3","narod3","nas3","natura3","navet3","neagra4","neant4",
-"nebun3","nectar4","negura4","neon4","nepot4","nerv4","neuron4","nevroz4","nichel4","nimic4",
-"nisip4","nivel4","nobil4","nod4","nor4","noroc4","nota4","nou4","novac4","nox4","nuca4",
-"nud4","nufar4","numar4","nunta4","nurca4","nut4","nuvela4",
+"nicovala","nifon","nihilism","nimba","nimeni","nimic","ninja","nisip","nivel","nobil",
 "oala","oameni","oaste","obicei","obiect","oblon","obor","obraz","obroc","obuz",
 "ocara","ocazie","ochelari","ocnasi","ocnita","octav","octet","octombrie","ocult","ocupant",
 "odajdie","odgon","odihna","odisee","odrasla","oferta","oficiu","ofiter","ofranda","oftica",
@@ -479,4 +469,5 @@
 "zmeu","zmeura","zodia","zodie","zombi","zona","zonal","zonare","zori","zorile",
 "zoster","zvanc","zvelt","zvon","zvona","zvoner","zvornic","zvuc","zvucit","zvucire" 
 ]
+
 
